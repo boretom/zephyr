@@ -7,23 +7,23 @@ import platform
 
 from runners.core import ZephyrBinaryRunner, RunnerCaps
 
-default_device = '/dev/ttyUSB0'
+DEFAULT_DEVICE = '/dev/ttyUSB0'
 if platform.system() == 'Darwin':
-    default_device = '/dev/tty.SLAB_USBtoUART'
+    DEFAULT_DEVICE = '/dev/tty.SLAB_USBtoUART'
     
 class Stm32flashBinaryRunner(ZephyrBinaryRunner):
     '''Runner front-end for stm32flash.'''
 
-    def __init__(self, cfg, device, baud='57600',
-                 force_binary_parser=False, get_info=False,
-                 start_address='0', exec_addr=None,
-                 serial_mode='8e1', reset=False, verify=False):
+    def __init__(self, cfg, device, action='write', baud='57600',
+                 force_binary=False, start_address='0',
+                 exec_addr=None, serial_mode='8e1', reset=False, 
+                 verify=False):
         super(Stm32flashBinaryRunner, self).__init__(cfg)
 
         self.device = device
+        self.action = action
         self.baud = baud
-        self.force_binary_parser = force_binary_parser
-        self.get_info = get_info
+        self.force_binary = force_binary
         self.start_address = start_address
         self.exec_addr = exec_addr
         self.serial_mode = serial_mode
@@ -45,8 +45,12 @@ class Stm32flashBinaryRunner(ZephyrBinaryRunner):
         # none for now
 
         # optional argument(s)
-        parser.add_argument('--device', default=default_device, required=False,
-                            help='serial port to flash, default \'' + default_device + '\'')
+        parser.add_argument('--device', default=DEFAULT_DEVICE, required=False,
+                            help='serial port to flash, default \'' + DEFAULT_DEVICE + '\'')
+
+        parser.add_argument('--action', default='write', required=False,
+                            choices=['erase', 'info', 'start', 'write'],
+                            help='erase / get device info / start execution / write flash')
 
         parser.add_argument('--baud-rate', default='57600', required=False,
                             choices=['1200', '1800', '2400', '4800', '9600', '19200',
@@ -54,11 +58,8 @@ class Stm32flashBinaryRunner(ZephyrBinaryRunner):
                             '500000', '576000', '921600', '1000000', '1500000', '2000000'],
                             help='serial baud rate, default \'57600\'')
 
-        parser.add_argument('--force-binary-parser', required=False, action='store_true',
-                            help='force binary parser')
-
-        parser.add_argument('--get-info', required=False, action='store_true',
-                            help='get device information')
+        parser.add_argument('--force-binary', required=False, action='store_true',
+                            help='force the binary parser')
 
         parser.add_argument('--start-address', default='0',required=False,
                             help='specify start address for write operation, default \'0\'')
@@ -78,8 +79,8 @@ class Stm32flashBinaryRunner(ZephyrBinaryRunner):
 
     @classmethod
     def create(cls, cfg, args):
-        return Stm32flashBinaryRunner(cfg, device=args.device,baud=args.baud_rate,
-            force_binary_parser=args.force_binary_parser,get_info=args.get_info,
+        return Stm32flashBinaryRunner(cfg, device=args.device,action=args.action,baud=args.baud_rate,
+            force_binary=args.force_binary,
             start_address=args.start_address, exec_addr=args.execution_addr,
             serial_mode=args.serial_mode,reset=args.reset,verify=args.verify)
 
@@ -89,33 +90,58 @@ class Stm32flashBinaryRunner(ZephyrBinaryRunner):
         bin_name = self.cfg.bin_file
         bin_size = path.getsize(bin_name)
 
-        if self.get_info:
-            # show device information and exit
-            cmd_flash = ['stm32flash', '-b', self.baud,
-            '-m', self.serial_mode, self.device]
-            self.check_call(cmd_flash)
-            return
-
         cmd_flash = ['stm32flash', '-b', self.baud,
+            '-m', self.serial_mode]
+
+        action = self.action.lower()
+        msg_text = "something is wrong"
+
+        if action == 'info':
+            # show device information and exit
+            msg_text = "get device info from {}".format(self.device)
+            cmd_flash.extend([])
+
+        elif action == 'erase':
+            # erase flash 
+            #size_aligned = (int(bin_size)  >> 12) + 1 << 12
+            size_aligned = (int(bin_size) & 0xfffff000) + 4096
+            msg_text = "erase {} bit starting at {}".format(size_aligned,self.start_address)
+            cmd_flash.extend([
+            '-S', self.start_address + ":" + str(size_aligned), '-o'])
+
+        elif action == 'start':
+            # start execution
+            msg_text = "start code execution at {}".format(self.start_address)
+            cmd_flash.extend([
+            '-g', self.start_address])
+
+        elif action == 'write':
+            # '-S', self.start_address + ":" + str(bin_size),
+            msg_text = "write {} bytes starting at {}".format(bin_size,self.start_address)
+            cmd_flash.extend([
             '-S', self.start_address + ":" + str(bin_size),
-            '-m', self.serial_mode, '-w', bin_name]
+            '-w', bin_name])
 
-        if self.exec_addr:
-            if self.exec_addr.lower() == 'auto':
-                self.exec_addr = self.start_address
-            cmd_flash.extend(['-g', self.exec_addr])
+            if self.exec_addr:
+                if self.exec_addr.lower() == 'auto':
+                    self.exec_addr = self.start_address
+                cmd_flash.extend(['-g', self.exec_addr])
 
-        if self.force_binary_parser:
-            cmd_flash.extend(['-f'])
+            if self.force_binary:
+                cmd_flash.extend(['-f'])
 
-        if self.reset:
-            cmd_flash.extend(['-R'])
+            if self.reset:
+                cmd_flash.extend(['-R'])
 
-        if self.verify:
-            cmd_flash.extend(['-v'])
+            if self.verify:
+                cmd_flash.extend(['-v'])
 
+        else:
+            msg_text = "invalid action \'{}\' passed!".format(action)
+            self.logger.error('Invalid action \'{}\' passed!'.format(action))
+            return -1
 
-        cmd_flash.extend([ self.device])
-        self.logger.info('Flashing file: {}'.format(bin_name))
+        cmd_flash.extend([ self.device ])
+        self.logger.info("Board: " + msg_text)
         self.check_call(cmd_flash)
-        self.logger.info('Board flashed successfully.')
+        self.logger.info('Board: finished \'{}\' .'.format(action))
