@@ -17,7 +17,6 @@ TEST_CMD = 'stm32flash'
 TEST_DEVICE = '/dev/ttyUSB0'
 if platform.system() == 'Darwin':
     TEST_DEVICE = '/dev/tty.SLAB_USBtoUART'
-TEST_DEVICE = '/dev/tty.SLAB_USBtoUART'
 TEST_BAUD = '115200'
 TEST_FORCE_BINARY = False
 TEST_ADDR = '0x08000000'
