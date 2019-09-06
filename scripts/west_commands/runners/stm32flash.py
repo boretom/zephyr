@@ -1,3 +1,5 @@
+# Copyright (c) 2019 Thomas Kupper <thomas.kupper@gmail.com>
+#
 # SPDX-License-Identifier: Apache-2.0
 
 '''Runner for flashing with stm32flash.'''
