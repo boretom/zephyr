@@ -14,17 +14,16 @@ if platform.system() == 'Darwin':
 class Stm32flashBinaryRunner(ZephyrBinaryRunner):
     '''Runner front-end for stm32flash.'''
 
-    def __init__(self, cfg, device, action='write', baud='57600',
-                 force_binary=False, start_address='0',
-                 exec_addr=None, serial_mode='8e1', reset=False, 
-                 verify=False):
+    def __init__(self, cfg, device, action='write', baud=57600,
+                 force_binary=False, start_addr=0, exec_addr=None,
+                 serial_mode='8e1', reset=False, verify=False):
         super(Stm32flashBinaryRunner, self).__init__(cfg)
 
         self.device = device
         self.action = action
         self.baud = baud
         self.force_binary = force_binary
-        self.start_address = start_address
+        self.start_addr = start_addr
         self.exec_addr = exec_addr
         self.serial_mode = serial_mode
         self.reset = reset
@@ -61,12 +60,12 @@ class Stm32flashBinaryRunner(ZephyrBinaryRunner):
         parser.add_argument('--force-binary', required=False, action='store_true',
                             help='force the binary parser')
 
-        parser.add_argument('--start-address', default='0',required=False,
+        parser.add_argument('--start-addr', default=0,required=False,
                             help='specify start address for write operation, default \'0\'')
 
         parser.add_argument('--execution-addr', default=None,required=False,
-                            help='start execution at specified address, default: \'auto\' \
-                                  equals same as start address')
+                            help='start execution at specified address, default \'0\' \
+                            which means start of flash')
 
         parser.add_argument('--serial-mode', default='8e1',required=False,
                             help='serial port mode, default \'8e1\'')
@@ -79,9 +78,9 @@ class Stm32flashBinaryRunner(ZephyrBinaryRunner):
 
     @classmethod
     def create(cls, cfg, args):
-        return Stm32flashBinaryRunner(cfg, device=args.device,action=args.action,baud=args.baud_rate,
-            force_binary=args.force_binary,
-            start_address=args.start_address, exec_addr=args.execution_addr,
+        return Stm32flashBinaryRunner(cfg, device=args.device,action=args.action,
+            baud=args.baud_rate,force_binary=args.force_binary,
+            start_addr=args.start_addr, exec_addr=args.execution_addr,
             serial_mode=args.serial_mode,reset=args.reset,verify=args.verify)
 
     def do_run(self, command, **kwargs):
@@ -94,37 +93,39 @@ class Stm32flashBinaryRunner(ZephyrBinaryRunner):
             '-m', self.serial_mode]
 
         action = self.action.lower()
-        msg_text = "something is wrong"
+        msg_text = "something went wrong"
 
         if action == 'info':
             # show device information and exit
             msg_text = "get device info from {}".format(self.device)
-            cmd_flash.extend([])
 
         elif action == 'erase':
             # erase flash 
             #size_aligned = (int(bin_size)  >> 12) + 1 << 12
             size_aligned = (int(bin_size) & 0xfffff000) + 4096
-            msg_text = "erase {} bit starting at {}".format(size_aligned,self.start_address)
+            msg_text = "erase {} bit starting at {}".format(size_aligned,self.start_addr)
             cmd_flash.extend([
-            '-S', self.start_address + ":" + str(size_aligned), '-o'])
+            '-S', self.start_addr + ":" + str(size_aligned), '-o'])
 
         elif action == 'start':
             # start execution
-            msg_text = "start code execution at {}".format(self.start_address)
+            msg_text = "start code execution at {}".format(self.exec_addr)
+            if self.exec_addr:
+                if self.exec_addr == 0 or self.exec_addr.lower() == '0x0':
+                    msg_text += " (flash start)"
+            else:
+                self.exec_addr = 0
             cmd_flash.extend([
-            '-g', self.start_address])
+            '-g', str(self.exec_addr)])
 
         elif action == 'write':
-            # '-S', self.start_address + ":" + str(bin_size),
-            msg_text = "write {} bytes starting at {}".format(bin_size,self.start_address)
+            # flash binary file
+            msg_text = "write {} bytes starting at {}".format(bin_size,self.start_addr)
             cmd_flash.extend([
-            '-S', self.start_address + ":" + str(bin_size),
+            '-S', self.start_addr + ":" + str(bin_size),
             '-w', bin_name])
 
             if self.exec_addr:
-                if self.exec_addr.lower() == 'auto':
-                    self.exec_addr = self.start_address
                 cmd_flash.extend(['-g', self.exec_addr])
 
             if self.force_binary:

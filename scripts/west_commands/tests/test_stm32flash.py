@@ -21,7 +21,7 @@ TEST_BAUD = '115200'
 TEST_FORCE_BINARY = False
 TEST_ADDR = '0x08000000'
 TEST_BIN_SIZE = '4095'
-TEST_EXEC_ADDR = None
+TEST_EXEC_ADDR = '0'
 TEST_SERIAL_MODE = '8e1'
 TEST_RESET = False
 TEST_VERIFY = False
@@ -46,7 +46,7 @@ EXPECTED_COMMANDS = {
     ([TEST_CMD,
       '-b', TEST_BAUD,
       '-m', TEST_SERIAL_MODE,
-      '-g', TEST_ADDR, TEST_DEVICE],),
+      '-g', TEST_EXEC_ADDR, TEST_DEVICE],),
 
     'write':
     ([TEST_CMD,
@@ -70,10 +70,15 @@ def os_path_getsize_patch(filename):
 @patch('runners.core.ZephyrBinaryRunner.check_call')
 def test_stm32flash_init(cc, req, action, runner_config):
     '''Test actions using a runner created by constructor.'''
+    test_exec_addr = TEST_EXEC_ADDR
+    if action == 'write':
+        test_exec_addr = None
+
     runner = Stm32flashBinaryRunner(runner_config, device=TEST_DEVICE,
                  action=action,baud=TEST_BAUD,force_binary=TEST_FORCE_BINARY,
-                 start_address=TEST_ADDR,exec_addr=TEST_EXEC_ADDR,
+                 start_addr=TEST_ADDR,exec_addr=test_exec_addr,
                  serial_mode=TEST_SERIAL_MODE,reset=TEST_RESET,verify=TEST_VERIFY)
+
     with patch('os.path.getsize', side_effect=os_path_getsize_patch):
             runner.run('flash')
     assert cc.call_args_list == [call(x) for x in EXPECTED_COMMANDS[action]]
@@ -83,7 +88,12 @@ def test_stm32flash_init(cc, req, action, runner_config):
 @patch('runners.core.ZephyrBinaryRunner.check_call')
 def test_stm32flash_create(cc, req, action, runner_config):
     '''Test actions using a runner created from action line parameters.'''
-    args = ['--action', action, '--baud-rate', TEST_BAUD, '--start-address', TEST_ADDR]
+    if action == 'start':
+        args = ['--action', action, '--baud-rate', TEST_BAUD, '--start-addr', TEST_ADDR,
+                '--execution-addr', TEST_EXEC_ADDR]
+    else:
+        args = ['--action', action, '--baud-rate', TEST_BAUD, '--start-addr', TEST_ADDR]
+
     parser = argparse.ArgumentParser()
     Stm32flashBinaryRunner.add_parser(parser)
     arg_namespace = parser.parse_args(args)
