@@ -12,7 +12,7 @@ from runners.core import ZephyrBinaryRunner, RunnerCaps
 DEFAULT_DEVICE = '/dev/ttyUSB0'
 if platform.system() == 'Darwin':
     DEFAULT_DEVICE = '/dev/tty.SLAB_USBtoUART'
-    
+
 class Stm32flashBinaryRunner(ZephyrBinaryRunner):
     '''Runner front-end for stm32flash.'''
 
@@ -62,14 +62,14 @@ class Stm32flashBinaryRunner(ZephyrBinaryRunner):
         parser.add_argument('--force-binary', required=False, action='store_true',
                             help='force the binary parser')
 
-        parser.add_argument('--start-addr', default=0,required=False,
+        parser.add_argument('--start-addr', default=0, required=False,
                             help='specify start address for write operation, default \'0\'')
 
-        parser.add_argument('--execution-addr', default=None,required=False,
+        parser.add_argument('--execution-addr', default=None, required=False,
                             help='start execution at specified address, default \'0\' \
                             which means start of flash')
 
-        parser.add_argument('--serial-mode', default='8e1',required=False,
+        parser.add_argument('--serial-mode', default='8e1', required=False,
                             help='serial port mode, default \'8e1\'')
 
         parser.add_argument('--reset', default=False, required=False, action='store_true',
@@ -80,10 +80,10 @@ class Stm32flashBinaryRunner(ZephyrBinaryRunner):
 
     @classmethod
     def create(cls, cfg, args):
-        return Stm32flashBinaryRunner(cfg, device=args.device,action=args.action,
-            baud=args.baud_rate,force_binary=args.force_binary,
+        return Stm32flashBinaryRunner(cfg, device=args.device, action=args.action,
+            baud=args.baud_rate, force_binary=args.force_binary,
             start_addr=args.start_addr, exec_addr=args.execution_addr,
-            serial_mode=args.serial_mode,reset=args.reset,verify=args.verify)
+            serial_mode=args.serial_mode, reset=args.reset, verify=args.verify)
 
     def do_run(self, command, **kwargs):
         self.require('stm32flash')
@@ -102,10 +102,10 @@ class Stm32flashBinaryRunner(ZephyrBinaryRunner):
             msg_text = "get device info from {}".format(self.device)
 
         elif action == 'erase':
-            # erase flash 
+            # erase flash
             #size_aligned = (int(bin_size)  >> 12) + 1 << 12
             size_aligned = (int(bin_size) & 0xfffff000) + 4096
-            msg_text = "erase {} bit starting at {}".format(size_aligned,self.start_addr)
+            msg_text = "erase {} bit starting at {}".format(size_aligned, self.start_addr)
             cmd_flash.extend([
             '-S', self.start_addr + ":" + str(size_aligned), '-o'])
 
@@ -122,7 +122,7 @@ class Stm32flashBinaryRunner(ZephyrBinaryRunner):
 
         elif action == 'write':
             # flash binary file
-            msg_text = "write {} bytes starting at {}".format(bin_size,self.start_addr)
+            msg_text = "write {} bytes starting at {}".format(bin_size, self.start_addr)
             cmd_flash.extend([
             '-S', self.start_addr + ":" + str(bin_size),
             '-w', bin_name])
@@ -144,7 +144,7 @@ class Stm32flashBinaryRunner(ZephyrBinaryRunner):
             self.logger.error('Invalid action \'{}\' passed!'.format(action))
             return -1
 
-        cmd_flash.extend([ self.device ])
+        cmd_flash.extend([self.device])
         self.logger.info("Board: " + msg_text)
         self.check_call(cmd_flash)
         self.logger.info('Board: finished \'{}\' .'.format(action))

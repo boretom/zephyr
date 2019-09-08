@@ -27,8 +27,8 @@ TEST_RESET = False
 TEST_VERIFY = False
 
 # Expected subprocesses to be run for each action. Using the
-# runner_config fixture (and always specifying all necessary 
-# parameters) means we don't get 100% coverage, but it's a 
+# runner_config fixture (and always specifying all necessary
+# parameters) means we don't get 100% coverage, but it's a
 # starting out point.
 EXPECTED_COMMANDS = {
     'info':
@@ -58,7 +58,7 @@ EXPECTED_COMMANDS = {
 }
 
 def require_patch(program):
-    assert program  == TEST_CMD
+    assert program == TEST_CMD
 
 def os_path_getsize_patch(filename):
     if filename == RC_KERNEL_BIN:
@@ -75,12 +75,12 @@ def test_stm32flash_init(cc, req, action, runner_config):
         test_exec_addr = None
 
     runner = Stm32flashBinaryRunner(runner_config, device=TEST_DEVICE,
-                 action=action,baud=TEST_BAUD,force_binary=TEST_FORCE_BINARY,
-                 start_addr=TEST_ADDR,exec_addr=test_exec_addr,
-                 serial_mode=TEST_SERIAL_MODE,reset=TEST_RESET,verify=TEST_VERIFY)
+                 action=action, baud=TEST_BAUD, force_binary=TEST_FORCE_BINARY,
+                 start_addr=TEST_ADDR, exec_addr=test_exec_addr,
+                 serial_mode=TEST_SERIAL_MODE, reset=TEST_RESET, verify=TEST_VERIFY)
 
     with patch('os.path.getsize', side_effect=os_path_getsize_patch):
-            runner.run('flash')
+        runner.run('flash')
     assert cc.call_args_list == [call(x) for x in EXPECTED_COMMANDS[action]]
 
 @pytest.mark.parametrize('action', EXPECTED_COMMANDS)
@@ -99,5 +99,5 @@ def test_stm32flash_create(cc, req, action, runner_config):
     arg_namespace = parser.parse_args(args)
     runner = Stm32flashBinaryRunner.create(runner_config, arg_namespace)
     with patch('os.path.getsize', side_effect=os_path_getsize_patch):
-            runner.run('flash')
+        runner.run('flash')
     assert cc.call_args_list == [call(x) for x in EXPECTED_COMMANDS[action]]
