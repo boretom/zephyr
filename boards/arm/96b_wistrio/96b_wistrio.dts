@@ -32,6 +32,7 @@
 
 	aliases {
 		led0 = &green_led_0;
+		led1 = &blue_led_0;
 	};
 };
 
@@ -52,9 +53,9 @@
 &i2c1 {
 	status = "okay";
 
-	lis3dh@32 {
-		compatible = "st,lis3dh";
-		reg = <0x32>;
+	lis3dh@19 {
+		compatible = "st,lis2dh";
+		reg = <0x19>;
 		label = "LIS3DH";
 	};
 };
