@@ -1,7 +1,7 @@
 sample:
-  name: LIS2DH accelerometer and gyrometer sensor
+  name: LIS3DH 3D Accelerometer data Monitor
 tests:
-  sample.sensor.lis2dh:
-    harness: console
-    tags: sensors
-    depends_on: lis2dh
+  sample.sensor.lis3dh:
+    harness: sensor
+    tags: samples sensor
+    depends_on: i2c lis2dh
