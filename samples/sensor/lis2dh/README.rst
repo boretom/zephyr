@@ -1,50 +1,36 @@
-.. _lsm6dsl:
+.. _lis2dh:
 
-LSM6DSL: IMU sensor Monitor
-###########################
+LIS2DH & LIS3DH: Accelerometer data Monitor
+#######################################################
 
 Overview
 ********
-This sample sets the LSM6DSL accelerometer and gyroscope to 104Hz
-and enable a trigger on data ready. It displays on the console the
-values for accelerometer and gyroscope, plus optionally the values of
-any magnetometer or pressure sensor attached to it (sensorhub function).
-
+This sample application periodically reads accelerometer data from the
+LIS2DH and LIS3DH module's sensors, and displays the sensor data on the
+console.
 
 Requirements
 ************
 
-This sample uses the LSM6DSL sensor controlled using the I2C or SPI interface.
-It has been tested on both :ref:`96b_argonkey` and disco_l475_iot1 board.
+This sample uses the LIS2DH or LIS2DH, ST MEMS system-in-package featuring
+a 3D digital linear acceleration sensor, controlled using the I2C interface.
 
 References
 **********
 
-- LSM6DSL http://www.st.com/en/mems-and-sensors/lsm6dsl.html
+For more information about the LIS2DH & LIS3DH eCompass module, see
+https://www.st.com/en/mems-and-sensors/lis2dh.html
+https://www.st.com/en/mems-and-sensors/lis3dh.html
 
 Building and Running
 ********************
 
- This project outputs sensor data to the console. It requires an LSM6DSL
- sensor, which is present on both the :ref:`96b_argonkey` and disco_l475_iot1 board.
-
-Building on ArgonKey board
-==========================
+This project outputs sensor data to the console. It requires a LIS2DH or
+LIS3DH system-in-package, which is present on the :ref:`96b_wistrio board`
 
 .. zephyr-app-commands::
-   :zephyr-app: samples/sensors/lsm6dsl
-   :host-os: unix
-   :board: 96b_argonkey
-   :goals: build
-   :compact:
-
-Building on disco_l475_iot1 board
-=================================
-
-.. zephyr-app-commands::
-   :zephyr-app: samples/sensors/lsm6dsl
-   :host-os: unix
-   :board: disco_l475_iot1
+   :zephyr-app: samples/sensors/lis2dh
+   :board: 96b_wistrio
    :goals: build
    :compact:
 
@@ -53,14 +39,9 @@ Sample Output
 
 .. code-block:: console
 
-    LSM6DSL sensor samples:
+   Accelerometer data:
+   ( x y z ) = ( -0.078127  -0.347666  1.105502 )
+   Accelerometer data:
+   ( x y z ) = ( 0.074221  -0.304696  0.972685 )
 
-    accel (-3.184000 -0.697000 9.207000) m/s2
-    gyro (0.065000 -0.029000 0.002000) dps
-    magn (-0.042000 0.294000 -0.408000) gauss
-    - (0) (trig_cnt: 190474)
-
-    <repeats endlessly every 2 seconds>
-
-.. note:: The magn row is displayed only when running sample onto 96b_argonkey board, where a magnetometer is connected to LSM6DSL.
-
+   <repeats endlessly every 2 seconds>
